@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# SPA : toutes les routes non-existantes sont servies par index.html
+# pour que le routeur client prenne la main (refresh sur /badges, /quiz…).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
