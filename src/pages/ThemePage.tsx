@@ -6,10 +6,12 @@ import { resolveIcon } from '../lib/icons';
 import type { MemoCard, Theme } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
 import { SourceTag } from '../components/SourceTag';
+import { useLevel } from '../lib/useLevel';
 
 export function ThemePage() {
   const { themeId } = useParams<{ themeId: string }>();
   const navigate = useNavigate();
+  const [level] = useLevel();
   const [theme, setTheme] = useState<Theme | null>(null);
   const [cards, setCards] = useState<MemoCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -17,9 +19,12 @@ export function ThemePage() {
   useEffect(() => {
     if (!themeId) return;
     let cancelled = false;
+    setTheme(null);
+    setCards(null);
+    setError(null);
     (async () => {
       try {
-        const [t, c] = await Promise.all([fetchTheme(themeId), fetchMemoCards(themeId)]);
+        const [t, c] = await Promise.all([fetchTheme(themeId), fetchMemoCards(themeId, level)]);
         if (!cancelled) {
           setTheme(t);
           setCards(c);
@@ -31,7 +36,7 @@ export function ThemePage() {
     return () => {
       cancelled = true;
     };
-  }, [themeId]);
+  }, [themeId, level]);
 
   if (error) return <ErrorBox message={error} />;
   if (!theme || !cards) return <Loader />;
@@ -73,22 +78,29 @@ export function ThemePage() {
       </button>
 
       <h2 className="text-lg font-semibold mb-3">Fiches mémo</h2>
-      <ul className="space-y-3">
-        {cards.map((card) => (
-          <li key={card.id} className="card p-4">
-            <h3 className="font-semibold text-lg mb-2">{card.title}</h3>
-            <ol className="list-decimal list-outside pl-5 space-y-2 text-slate-800 mb-3">
-              {Array.isArray(card.action_steps) &&
-                card.action_steps.map((step, i) => <li key={i}>{step}</li>)}
-            </ol>
-            <SourceTag
-              sourceName={card.source_name}
-              sourceRef={card.source_ref}
-              sourceUrl={card.source_url}
-            />
-          </li>
-        ))}
-      </ul>
+      {cards.length === 0 ? (
+        <p className="text-sm text-slate-600">
+          Pas encore de fiche pour ce thème à votre niveau. Les questions du quiz couvrent
+          cependant ces contenus.
+        </p>
+      ) : (
+        <ul className="space-y-3">
+          {cards.map((card) => (
+            <li key={card.id} className="card p-4">
+              <h3 className="font-semibold text-lg mb-2">{card.title}</h3>
+              <ol className="list-decimal list-outside pl-5 space-y-2 text-slate-800 mb-3">
+                {Array.isArray(card.action_steps) &&
+                  card.action_steps.map((step, i) => <li key={i}>{step}</li>)}
+              </ol>
+              <SourceTag
+                sourceName={card.source_name}
+                sourceRef={card.source_ref}
+                sourceUrl={card.source_url}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

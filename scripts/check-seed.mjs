@@ -1,4 +1,4 @@
-// Vérifie que le seed GQS est bien en base : compte les lignes de chaque table.
+// Vérifie que le seed v2 est bien en base : compte les lignes de chaque table.
 // Usage : node scripts/check-seed.mjs
 import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
@@ -28,10 +28,11 @@ if (!url || !anon) {
 const supabase = createClient(url, anon, { auth: { persistSession: false } });
 
 const expected = {
-  themes: 2,
-  memo_cards: 14,
-  questions: 19,
-  quizzes: 3,
+  referentiels: 6,
+  themes: 14,
+  memo_cards: 24,
+  questions: 60,
+  quizzes: 1,
   badges: 4,
 };
 
@@ -53,7 +54,7 @@ for (const [table, want] of Object.entries(expected)) {
 }
 
 if (!allOk) {
-  console.error('\n✗ Écart détecté. Vérifie que schema.sql PUIS seed-gqs.sql ont été exécutés dans le bon ordre.');
+  console.error('\n✗ Écart détecté. Vérifie que schema-v2.sql PUIS seed-v2.sql ont été exécutés dans le bon ordre.');
   process.exit(1);
 }
-console.log('\n✓ Seed conforme.');
+console.log('\n✓ Seed v2 conforme.');

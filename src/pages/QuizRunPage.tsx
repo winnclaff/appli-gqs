@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Award, Check, ChevronLeft, RotateCw, X } from 'lucide-react';
-import { fetchBadges, fetchGqsReferentiel, fetchQuizQuestions } from '../lib/api';
+import { fetchBadges, fetchQuizQuestions } from '../lib/api';
 import type { Badge, Question, QuizMode } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
 import { SourceTag } from '../components/SourceTag';
 import { addHistoryEntry, getUnlockedBadges, setUnlockedBadges } from '../lib/storage';
 import { computeMaxStreak, computeUnlockedBadgeIds } from '../lib/gamification';
 import { resolveIcon } from '../lib/icons';
+import { useLevel } from '../lib/useLevel';
 
 type LocationState = {
   mode: QuizMode;
@@ -16,10 +17,20 @@ type LocationState = {
   count: number;
 };
 
+function QuestionNumberBadge({ n }: { n: number | null }) {
+  if (n == null) return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-slate-500 bg-slate-100 rounded px-2 py-0.5">
+      N°{n}
+    </span>
+  );
+}
+
 export function QuizRunPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as LocationState | null;
+  const [level] = useLevel();
 
   const [questions, setQuestions] = useState<Question[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,11 +43,10 @@ export function QuizRunPage() {
     let cancelled = false;
     (async () => {
       try {
-        const ref = await fetchGqsReferentiel();
         const qs = await fetchQuizQuestions({
           mode: state.mode,
           themeId: state.themeId,
-          referentielId: ref.id,
+          level,
           count: state.count,
         });
         if (!cancelled) {
@@ -50,7 +60,7 @@ export function QuizRunPage() {
     return () => {
       cancelled = true;
     };
-  }, [state]);
+  }, [state, level]);
 
   const finished = useMemo(
     () => Boolean(questions && answers.length && answers.every((a) => a !== null)),
@@ -70,7 +80,7 @@ export function QuizRunPage() {
         >
           <ChevronLeft className="h-4 w-4" aria-hidden /> Retour
         </Link>
-        <ErrorBox message="Aucune question disponible pour ce quiz." />
+        <ErrorBox message="Aucune question disponible pour ce quiz à votre niveau." />
       </section>
     );
   }
@@ -121,10 +131,15 @@ export function QuizRunPage() {
       <div className="w-full bg-slate-200 h-1.5 rounded-full mb-6 overflow-hidden">
         <div
           className="bg-brand-600 h-full transition-all"
-          style={{ width: `${((currentIdx + (revealed ? 1 : 0)) / questions.length) * 100}%` }}
+          style={{
+            width: `${((currentIdx + (revealed ? 1 : 0)) / questions.length) * 100}%`,
+          }}
         />
       </div>
 
+      <div className="mb-2">
+        <QuestionNumberBadge n={q.question_number} />
+      </div>
       <h1 className="text-lg font-semibold mb-4">{q.question_text}</h1>
 
       <ul className="space-y-2 mb-6">
@@ -167,7 +182,7 @@ export function QuizRunPage() {
 
       {revealed && (
         <div className="card p-4 mb-4 bg-slate-50">
-          <div className="font-semibold mb-1">Explication</div>
+          <div className="font-semibold mb-1">Justification</div>
           <p className="text-slate-800 text-sm mb-3">{q.explanation}</p>
           <SourceTag
             sourceName={q.source_name}
@@ -215,7 +230,6 @@ function QuizResult({
   const savedRef = useRef(false);
 
   useEffect(() => {
-    // Une seule persistance / évaluation, même en StrictMode.
     if (savedRef.current) return;
     savedRef.current = true;
 
@@ -239,7 +253,7 @@ function QuizResult({
         );
         setNewlyUnlocked(newly);
       } catch {
-        // Si Supabase échoue ou localStorage indispo, on n'affiche pas de badges — pas bloquant.
+        // Non bloquant : la progression est optionnelle.
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -321,7 +335,12 @@ function QuizResult({
                 >
                   {ok ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
                 </div>
-                <div className="font-semibold flex-1">{q.question_text}</div>
+                <div className="flex-1">
+                  <div className="mb-1">
+                    <QuestionNumberBadge n={q.question_number} />
+                  </div>
+                  <div className="font-semibold">{q.question_text}</div>
+                </div>
               </div>
               <ul className="space-y-1 mb-3 text-sm">
                 {q.choices.map((choice, ci) => {
@@ -341,6 +360,9 @@ function QuizResult({
                   );
                 })}
               </ul>
+              <div className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-1">
+                Justification
+              </div>
               <p className="text-sm text-slate-800 mb-2">{q.explanation}</p>
               <SourceTag
                 sourceName={q.source_name}

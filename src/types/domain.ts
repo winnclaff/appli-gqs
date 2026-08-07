@@ -11,6 +11,7 @@ export type Referentiel = {
 export type Theme = {
   id: string;
   referentiel_id: string;
+  code: string | null;
   title: string;
   icon: string | null;
   short_description: string | null;
@@ -26,6 +27,7 @@ export type MemoCard = {
   source_ref: string | null;
   source_name: string;
   source_url: string | null;
+  levels: Level[];
   sort_order: number;
 };
 
@@ -41,6 +43,7 @@ export type Quiz = {
 export type Question = {
   id: string;
   theme_id: string;
+  question_number: number | null;
   question_text: string;
   choices: string[];
   correct_choice_index: number;
@@ -48,6 +51,8 @@ export type Question = {
   source_ref: string | null;
   source_name: string;
   source_url: string | null;
+  levels: Level[];
+  referentiel_codes: string[];
 };
 
 export type BadgeCriteriaType =
@@ -65,5 +70,33 @@ export type Badge = {
   criteria_value: number;
 };
 
+export type Level = 'grand_public' | 'psc' | 'pse' | 'afgsu';
 export type QuizMode = 'theme' | 'mixed';
 export type QuestionCount = 5 | 10;
+
+export const LEVELS: { code: Level; label: string; short: string; description: string }[] = [
+  {
+    code: 'grand_public',
+    label: 'Grand public (GQS)',
+    short: 'Grand public',
+    description: 'Gestes qui sauvent — sensibilisation ouverte à tous.',
+  },
+  {
+    code: 'psc',
+    label: 'Citoyen (PSC)',
+    short: 'PSC',
+    description: 'Prévention et Secours Civiques niveau 1.',
+  },
+  {
+    code: 'pse',
+    label: 'Secouriste (PSE1/PSE2)',
+    short: 'PSE',
+    description: 'Premiers Secours en Équipe.',
+  },
+  {
+    code: 'afgsu',
+    label: 'Professionnel de santé (AFGSU)',
+    short: 'AFGSU',
+    description: "Attestation de Formation aux Gestes et Soins d'Urgence.",
+  },
+];
