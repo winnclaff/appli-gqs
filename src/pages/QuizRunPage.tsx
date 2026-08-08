@@ -128,7 +128,7 @@ export function QuizRunPage() {
         </span>
       </div>
 
-      <div className="w-full bg-slate-200 h-1.5 rounded-full mb-6 overflow-hidden">
+      <div className="w-full bg-slate-200 h-1.5 rounded-full mb-2 overflow-hidden">
         <div
           className="bg-brand-600 h-full transition-all"
           style={{
@@ -136,6 +136,13 @@ export function QuizRunPage() {
           }}
         />
       </div>
+
+      {questions.length < state.count && (
+        <p className="text-xs text-slate-500 mb-4">
+          Seulement {questions.length} question{questions.length > 1 ? 's' : ''} disponible
+          {questions.length > 1 ? 's' : ''} à votre niveau pour ce quiz.
+        </p>
+      )}
 
       <div className="mb-2">
         <QuestionNumberBadge n={q.question_number} />

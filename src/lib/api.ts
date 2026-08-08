@@ -3,58 +3,106 @@ import type { Question, Theme, MemoCard, Referentiel, Badge, Level } from '../ty
 
 const GQS_CODE = 'gqs';
 
+// ---------- Cache mémoire (durée de session) ----------
+// Le contenu ne change que via reseed Supabase + redeploy, jamais pendant une
+// session utilisateur : on peut donc le mettre en cache sans risque de le
+// servir périmé. Ça évite un refetch + spinner à chaque navigation
+// Home <-> Thème <-> Quiz, ce qui compte pour un outil consulté en urgence.
+const cache = new Map<string, Promise<unknown>>();
+
+function cached<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
+  if (!cache.has(key)) {
+    const promise = fetcher().catch((e) => {
+      cache.delete(key);
+      throw e;
+    });
+    cache.set(key, promise as Promise<unknown>);
+  }
+  return cache.get(key) as Promise<T>;
+}
+
+function getAllThemes(): Promise<Theme[]> {
+  return cached('themes:all', async () => {
+    const { data, error } = await supabase
+      .from('themes')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as Theme[];
+  });
+}
+
+function getMemoCardsForLevel(level: Level): Promise<MemoCard[]> {
+  return cached(`memo_cards:${level}`, async () => {
+    const { data, error } = await supabase
+      .from('memo_cards')
+      .select('*')
+      .contains('levels', [level])
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as MemoCard[];
+  });
+}
+
+function getQuestionsForLevel(level: Level): Promise<Question[]> {
+  return cached(`questions:${level}`, async () => {
+    const { data, error } = await supabase
+      .from('questions')
+      .select('*')
+      .contains('levels', [level]);
+    if (error) throw error;
+    return (data ?? []) as Question[];
+  });
+}
+
 export async function fetchGqsReferentiel(): Promise<Referentiel> {
-  const { data, error } = await supabase
-    .from('referentiels')
-    .select('*')
-    .eq('code', GQS_CODE)
-    .single();
-  if (error) throw error;
-  return data as Referentiel;
+  return cached('referentiel:gqs', async () => {
+    const { data, error } = await supabase
+      .from('referentiels')
+      .select('*')
+      .eq('code', GQS_CODE)
+      .single();
+    if (error) throw error;
+    return data as Referentiel;
+  });
 }
 
 // Retourne uniquement les thèmes qui ont au moins une fiche ou une question
 // pour le niveau demandé. Évite d'afficher un thème vide dans la Home.
 export async function fetchThemesForLevel(level: Level): Promise<Theme[]> {
   const [themes, cards, questions] = await Promise.all([
-    supabase.from('themes').select('*').order('sort_order', { ascending: true }),
-    supabase.from('memo_cards').select('theme_id').contains('levels', [level]),
-    supabase.from('questions').select('theme_id').contains('levels', [level]),
+    getAllThemes(),
+    getMemoCardsForLevel(level),
+    getQuestionsForLevel(level),
   ]);
-  if (themes.error) throw themes.error;
-  if (cards.error) throw cards.error;
-  if (questions.error) throw questions.error;
   const activeThemeIds = new Set<string>([
-    ...(cards.data ?? []).map((r) => (r as { theme_id: string }).theme_id),
-    ...(questions.data ?? []).map((r) => (r as { theme_id: string }).theme_id),
+    ...cards.map((c) => c.theme_id),
+    ...questions.map((q) => q.theme_id),
   ]);
-  return (themes.data ?? []).filter((t) => activeThemeIds.has((t as Theme).id)) as Theme[];
+  return themes.filter((t) => activeThemeIds.has(t.id));
 }
 
 export async function fetchTheme(themeId: string): Promise<Theme> {
-  const { data, error } = await supabase.from('themes').select('*').eq('id', themeId).single();
-  if (error) throw error;
-  return data as Theme;
+  const themes = await getAllThemes();
+  const theme = themes.find((t) => t.id === themeId);
+  if (!theme) throw new Error('Thème introuvable');
+  return theme;
 }
 
 export async function fetchMemoCards(themeId: string, level: Level): Promise<MemoCard[]> {
-  const { data, error } = await supabase
-    .from('memo_cards')
-    .select('*')
-    .eq('theme_id', themeId)
-    .contains('levels', [level])
-    .order('sort_order', { ascending: true });
-  if (error) throw error;
-  return (data ?? []) as MemoCard[];
+  const cards = await getMemoCardsForLevel(level);
+  return cards.filter((c) => c.theme_id === themeId);
 }
 
 export async function fetchBadges(): Promise<Badge[]> {
-  const { data, error } = await supabase
-    .from('badges')
-    .select('*')
-    .order('criteria_value', { ascending: true });
-  if (error) throw error;
-  return (data ?? []) as Badge[];
+  return cached('badges:all', async () => {
+    const { data, error } = await supabase
+      .from('badges')
+      .select('*')
+      .order('criteria_value', { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as Badge[];
+  });
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -73,22 +121,17 @@ export async function fetchQuizQuestions(params: {
   count: number;
 }): Promise<Question[]> {
   const { mode, themeId, level, count } = params;
+  if (mode === 'theme' && !themeId) throw new Error('themeId requis en mode theme');
 
-  let query = supabase.from('questions').select('*').contains('levels', [level]);
-  if (mode === 'theme') {
-    if (!themeId) throw new Error('themeId requis en mode theme');
-    query = query.eq('theme_id', themeId);
-  }
-  const { data, error } = await query;
-  if (error) throw error;
-
-  const rows = (data ?? []) as Question[];
-  return shuffle(rows).slice(0, count);
+  const all = await getQuestionsForLevel(level);
+  const pool = mode === 'theme' ? all.filter((q) => q.theme_id === themeId) : all;
+  return shuffle(pool).slice(0, count);
 }
 
 // Recherche full-text simple côté client pour la Home.
-// Le dataset (~60 questions, ~15 fiches) est petit : on récupère tout pour le niveau
-// puis on filtre en JS, plus simple qu'une full-text côté Postgres.
+// Le dataset (~60 questions, ~40 fiches) est petit et déjà en cache mémoire
+// après le premier chargement du niveau : la recherche ne fait plus aucun
+// aller-retour réseau après ça.
 export type SearchHit =
   | { kind: 'memo_card'; card: MemoCard; theme: Theme }
   | { kind: 'question'; question: Question; theme: Theme };
@@ -97,25 +140,18 @@ export async function searchAll(query: string, level: Level): Promise<SearchHit[
   const needle = query.trim().toLowerCase();
   if (needle.length < 2) return [];
 
-  const [themesRes, cardsRes, questionsRes] = await Promise.all([
-    supabase.from('themes').select('*'),
-    supabase.from('memo_cards').select('*').contains('levels', [level]),
-    supabase.from('questions').select('*').contains('levels', [level]),
+  const [themes, cards, questions] = await Promise.all([
+    getAllThemes(),
+    getMemoCardsForLevel(level),
+    getQuestionsForLevel(level),
   ]);
-  if (themesRes.error) throw themesRes.error;
-  if (cardsRes.error) throw cardsRes.error;
-  if (questionsRes.error) throw questionsRes.error;
-
   const themesById = new Map<string, Theme>();
-  for (const t of (themesRes.data ?? []) as Theme[]) themesById.set(t.id, t);
+  for (const t of themes) themesById.set(t.id, t);
 
   const hits: SearchHit[] = [];
 
-  for (const c of (cardsRes.data ?? []) as MemoCard[]) {
-    const haystack = [
-      c.title,
-      ...(Array.isArray(c.action_steps) ? c.action_steps : []),
-    ]
+  for (const c of cards) {
+    const haystack = [c.title, ...(Array.isArray(c.action_steps) ? c.action_steps : [])]
       .join(' \n ')
       .toLowerCase();
     if (haystack.includes(needle)) {
@@ -124,7 +160,7 @@ export async function searchAll(query: string, level: Level): Promise<SearchHit[
     }
   }
 
-  for (const q of (questionsRes.data ?? []) as Question[]) {
+  for (const q of questions) {
     const haystack = [q.question_text, q.explanation, ...(q.choices ?? [])]
       .join(' \n ')
       .toLowerCase();
