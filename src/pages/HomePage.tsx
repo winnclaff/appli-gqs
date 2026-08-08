@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, ListChecks, Award } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ListChecks, Award } from 'lucide-react';
 import { fetchThemesForLevel } from '../lib/api';
 import { resolveIcon } from '../lib/icons';
 import type { Theme } from '../types/domain';
+import { LEVELS } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
 import { LevelToggle } from '../components/LevelToggle';
 import { SearchBar } from '../components/SearchBar';
@@ -14,6 +15,7 @@ export function HomePage() {
   const [level, setLevel] = useLevel();
   const [themes, setThemes] = useState<Theme[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const levelInfo = LEVELS.find((l) => l.code === level);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,10 +36,15 @@ export function HomePage() {
 
   return (
     <section>
-      <h1 className="text-2xl font-bold mb-2">Réviser les gestes qui sauvent</h1>
-      <p className="text-slate-700 mb-6">
-        Fiches mémo et quiz de secourisme — RTN 2026, AFGSU et Situations Sanitaires Exceptionnelles.
-      </p>
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-brand-700 mb-3"
+      >
+        <ChevronLeft className="h-4 w-4" aria-hidden /> Changer de référentiel
+      </Link>
+
+      <h1 className="text-2xl font-bold mb-2">{levelInfo?.label ?? 'Réviser'}</h1>
+      <p className="text-slate-700 mb-6">{levelInfo?.description}</p>
 
       <StreakCard />
 

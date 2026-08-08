@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { WheelPage } from './pages/WheelPage';
 import { HomePage } from './pages/HomePage';
 import { ThemePage } from './pages/ThemePage';
 import { QuizHubPage } from './pages/QuizHubPage';
@@ -11,7 +12,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<WheelPage />} />
+          <Route path="/reviser" element={<HomePage />} />
           <Route path="/themes/:themeId" element={<ThemePage />} />
           <Route path="/quiz" element={<QuizHubPage />} />
           <Route path="/quiz/run" element={<QuizRunPage />} />
