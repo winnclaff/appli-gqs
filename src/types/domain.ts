@@ -59,7 +59,8 @@ export type BadgeCriteriaType =
   | 'quiz_completed'
   | 'theme_mastered'
   | 'streak'
-  | 'score_perfect';
+  | 'score_perfect'
+  | 'daily_streak';
 
 export type Badge = {
   id: string;

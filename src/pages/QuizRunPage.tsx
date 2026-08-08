@@ -279,7 +279,7 @@ function QuizResult({
         });
         const badges = await fetchBadges();
         const previouslyUnlocked = new Set(getUnlockedBadges());
-        const allUnlocked = computeUnlockedBadgeIds(badges, history);
+        const allUnlocked = computeUnlockedBadgeIds(badges, history, streak.longest);
         setUnlockedBadges(allUnlocked);
         const newly = badges.filter(
           (b) => allUnlocked.includes(b.id) && !previouslyUnlocked.has(b.id),

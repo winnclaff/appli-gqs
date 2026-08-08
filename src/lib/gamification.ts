@@ -2,10 +2,13 @@ import type { Badge } from '../types/domain';
 import type { QuestionAttempt, QuizHistoryEntry } from './storage';
 
 // Retourne les ids de badges qui doivent être débloqués vu l'historique complet.
-// Pure : ne touche pas au localStorage.
+// Pure : ne touche pas au localStorage. longestDailyStreak vient de
+// storage.getStreak().longest (jours de suite, distinct de la série de
+// bonnes réponses dans un quiz, couverte par criteria_type 'streak').
 export function computeUnlockedBadgeIds(
   badges: Badge[],
   history: QuizHistoryEntry[],
+  longestDailyStreak = 0,
 ): string[] {
   const totalQuizzes = history.length;
   const hasPerfect = history.some((h) => h.score === h.total && h.total > 0);
@@ -20,6 +23,8 @@ export function computeUnlockedBadgeIds(
           return hasPerfect;
         case 'streak':
           return bestStreak >= badge.criteria_value;
+        case 'daily_streak':
+          return longestDailyStreak >= badge.criteria_value;
         case 'theme_mastered':
           // Pas de critère précis en v1 — on considère qu'un thème est maîtrisé
           // si un quiz mode 'theme' a été réussi parfaitement.

@@ -19,6 +19,7 @@ import {
   Siren,
   Scale,
   Briefcase,
+  CalendarCheck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -42,6 +43,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   scale: Scale,
   'book-open': BookOpen,
   briefcase: Briefcase,
+  'calendar-check': CalendarCheck,
 };
 
 export function resolveIcon(name: string | null | undefined, fallback: LucideIcon = BookOpen) {

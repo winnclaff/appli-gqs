@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, Lock } from 'lucide-react';
 import { fetchBadges } from '../lib/api';
-import { getUnlockedBadges, getHistory } from '../lib/storage';
+import { getUnlockedBadges, getHistory, getStreak } from '../lib/storage';
 import { computeUnlockedBadgeIds } from '../lib/gamification';
 import { resolveIcon, Award } from '../lib/icons';
 import type { Badge } from '../types/domain';
@@ -12,6 +12,7 @@ const CRITERIA_LABELS: Record<Badge['criteria_type'], (v: number) => string> = {
   quiz_completed: (v) => (v === 1 ? 'Terminer 1 quiz' : `Terminer ${v} quiz`),
   score_perfect: () => 'Obtenir un score parfait',
   streak: (v) => `Enchaîner ${v} bonnes réponses d'affilée`,
+  daily_streak: (v) => (v === 1 ? 'Réviser 1 jour' : `Réviser ${v} jours de suite`),
   theme_mastered: () => 'Maîtriser un thème (100 % en quiz de thème)',
 };
 
@@ -29,7 +30,7 @@ export function BadgesPage() {
         setBadges(b);
         // Recalcule à l'affichage : au cas où un critère aurait changé ou où
         // l'utilisateur revient sur cette page sans être passé par la fin d'un quiz.
-        const derived = computeUnlockedBadgeIds(b, getHistory());
+        const derived = computeUnlockedBadgeIds(b, getHistory(), getStreak().longest);
         const merged = Array.from(new Set([...unlocked, ...derived]));
         setUnlocked(merged);
       } catch (e) {
