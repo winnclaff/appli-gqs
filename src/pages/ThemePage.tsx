@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ListChecks } from 'lucide-react';
-import { fetchMemoCards, fetchTheme } from '../lib/api';
+import { fetchMemoCards, fetchQuestionsForTheme, fetchTheme } from '../lib/api';
 import { resolveIcon } from '../lib/icons';
 import type { MemoCard, Theme } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
 import { SourceTag } from '../components/SourceTag';
 import { useLevel } from '../lib/useLevel';
+import { computeThemeMastery } from '../lib/gamification';
+import { getQuestionAttempts } from '../lib/storage';
 
 export function ThemePage() {
   const { themeId } = useParams<{ themeId: string }>();
@@ -14,6 +16,7 @@ export function ThemePage() {
   const [level] = useLevel();
   const [theme, setTheme] = useState<Theme | null>(null);
   const [cards, setCards] = useState<MemoCard[] | null>(null);
+  const [questionCount, setQuestionCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,13 +24,19 @@ export function ThemePage() {
     let cancelled = false;
     setTheme(null);
     setCards(null);
+    setQuestionCount(null);
     setError(null);
     (async () => {
       try {
-        const [t, c] = await Promise.all([fetchTheme(themeId), fetchMemoCards(themeId, level)]);
+        const [t, c, qs] = await Promise.all([
+          fetchTheme(themeId),
+          fetchMemoCards(themeId, level),
+          fetchQuestionsForTheme(themeId, level),
+        ]);
         if (!cancelled) {
           setTheme(t);
           setCards(c);
+          setQuestionCount(qs.length);
         }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Erreur de chargement');
@@ -42,6 +51,10 @@ export function ThemePage() {
   if (!theme || !cards) return <Loader />;
 
   const Icon = resolveIcon(theme.icon);
+  const mastery =
+    themeId && questionCount != null && questionCount > 0
+      ? computeThemeMastery(getQuestionAttempts(), themeId, questionCount)
+      : null;
 
   return (
     <section>
@@ -63,6 +76,23 @@ export function ThemePage() {
           )}
         </div>
       </header>
+
+      {mastery && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+            <span>Progression</span>
+            <span>
+              {mastery.masteredCount}/{mastery.total} maîtrisée{mastery.masteredCount > 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+            <div
+              className="bg-green-500 h-full transition-all"
+              style={{ width: `${(mastery.masteredCount / mastery.total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <button
         type="button"

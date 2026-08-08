@@ -71,7 +71,7 @@ export type Badge = {
 };
 
 export type Level = 'grand_public' | 'psc' | 'pse' | 'afgsu';
-export type QuizMode = 'theme' | 'mixed';
+export type QuizMode = 'theme' | 'mixed' | 'review';
 export type QuestionCount = 5 | 10;
 
 export const LEVELS: { code: Level; label: string; short: string; description: string }[] = [

@@ -1,19 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Award, Check, ChevronLeft, RotateCw, X } from 'lucide-react';
+import { Award, Check, ChevronLeft, Flame, RotateCw, X } from 'lucide-react';
 import { fetchBadges, fetchQuizQuestions } from '../lib/api';
 import type { Badge, Question, QuizMode } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
 import { SourceTag } from '../components/SourceTag';
-import { addHistoryEntry, getUnlockedBadges, setUnlockedBadges } from '../lib/storage';
+import {
+  addHistoryEntry,
+  getUnlockedBadges,
+  recordQuestionAttempts,
+  setUnlockedBadges,
+  touchStreak,
+} from '../lib/storage';
 import { computeMaxStreak, computeUnlockedBadgeIds } from '../lib/gamification';
 import { resolveIcon } from '../lib/icons';
 import { useLevel } from '../lib/useLevel';
+import { Confetti } from '../components/Confetti';
 
 type LocationState = {
   mode: QuizMode;
   themeId?: string;
   themeTitle?: string;
+  questionIds?: string[];
   count: number;
 };
 
@@ -37,15 +45,20 @@ export function QuizRunPage() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [revealed, setRevealed] = useState(false);
+  const [quizComplete, setQuizComplete] = useState(false);
 
   useEffect(() => {
     if (!state) return;
     let cancelled = false;
+    setCurrentIdx(0);
+    setRevealed(false);
+    setQuizComplete(false);
     (async () => {
       try {
         const qs = await fetchQuizQuestions({
           mode: state.mode,
           themeId: state.themeId,
+          questionIds: state.questionIds,
           level,
           count: state.count,
         });
@@ -61,11 +74,6 @@ export function QuizRunPage() {
       cancelled = true;
     };
   }, [state, level]);
-
-  const finished = useMemo(
-    () => Boolean(questions && answers.length && answers.every((a) => a !== null)),
-    [questions, answers],
-  );
 
   if (!state) return <Navigate to="/quiz" replace />;
   if (error) return <ErrorBox message={error} />;
@@ -85,7 +93,7 @@ export function QuizRunPage() {
     );
   }
 
-  if (finished) {
+  if (quizComplete) {
     return (
       <QuizResult
         questions={questions}
@@ -94,7 +102,7 @@ export function QuizRunPage() {
         themeId={state.themeId ?? null}
         themeTitle={state.themeTitle}
         onRestart={() => {
-          navigate('/quiz/run', { replace: true, state });
+          navigate('/quiz/run', { replace: true, state: { ...state } });
         }}
       />
     );
@@ -113,8 +121,12 @@ export function QuizRunPage() {
   }
 
   function handleNext() {
+    if (isLast) {
+      setQuizComplete(true);
+      return;
+    }
     setRevealed(false);
-    if (!isLast) setCurrentIdx((i) => i + 1);
+    setCurrentIdx((i) => i + 1);
   }
 
   return (
@@ -234,11 +246,25 @@ function QuizResult({
   const isPerfect = correct === total;
 
   const [newlyUnlocked, setNewlyUnlocked] = useState<Badge[]>([]);
+  const [streakInfo, setStreakInfo] = useState<{ current: number; incrementedToday: boolean } | null>(
+    null,
+  );
   const savedRef = useRef(false);
 
   useEffect(() => {
     if (savedRef.current) return;
     savedRef.current = true;
+
+    recordQuestionAttempts(
+      questions.map((q, i) => ({
+        questionId: q.id,
+        themeId: q.theme_id,
+        correct: correctFlags[i],
+        answeredAt: new Date().toISOString(),
+      })),
+    );
+    const { state: streak, incrementedToday } = touchStreak();
+    setStreakInfo({ current: streak.current, incrementedToday });
 
     (async () => {
       try {
@@ -266,12 +292,18 @@ function QuizResult({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const modeLabel =
+    mode === 'mixed'
+      ? 'Quiz mélangé'
+      : mode === 'review'
+        ? 'Révision de mes erreurs'
+        : `Quiz — ${themeTitle ?? 'thème'}`;
+
   return (
     <section>
+      {isPerfect && <Confetti />}
       <h1 className="text-2xl font-bold mb-1">Résultat</h1>
-      <p className="text-slate-600 mb-4 text-sm">
-        {mode === 'mixed' ? 'Quiz mélangé' : `Quiz — ${themeTitle ?? 'thème'}`}
-      </p>
+      <p className="text-slate-600 mb-4 text-sm">{modeLabel}</p>
 
       <div
         className={
@@ -285,6 +317,22 @@ function QuizResult({
           {isPerfect ? 'Sans faute — bravo !' : 'Continue, chaque révision compte.'}
         </div>
       </div>
+
+      {streakInfo && streakInfo.current > 0 && (
+        <div className="flex items-center gap-2 mb-6 text-sm text-slate-700">
+          <Flame
+            className={
+              'h-5 w-5 shrink-0 ' + (streakInfo.incrementedToday ? 'text-orange-500' : 'text-slate-400')
+            }
+            aria-hidden
+          />
+          <span>
+            Série de <span className="font-semibold">{streakInfo.current}</span> jour
+            {streakInfo.current > 1 ? 's' : ''}
+            {streakInfo.incrementedToday ? ' — continue comme ça !' : ' (déjà révisé aujourd\'hui)'}
+          </span>
+        </div>
+      )}
 
       {newlyUnlocked.length > 0 && (
         <div className="card p-4 mb-6 border-amber-300 bg-amber-50">

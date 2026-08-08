@@ -115,17 +115,43 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export async function fetchQuizQuestions(params: {
-  mode: 'theme' | 'mixed';
+  mode: 'theme' | 'mixed' | 'review';
   themeId?: string;
+  questionIds?: string[];
   level: Level;
   count: number;
 }): Promise<Question[]> {
-  const { mode, themeId, level, count } = params;
+  const { mode, themeId, questionIds, level, count } = params;
   if (mode === 'theme' && !themeId) throw new Error('themeId requis en mode theme');
 
   const all = await getQuestionsForLevel(level);
-  const pool = mode === 'theme' ? all.filter((q) => q.theme_id === themeId) : all;
+  let pool: Question[];
+  if (mode === 'review') {
+    const idSet = new Set(questionIds ?? []);
+    pool = all.filter((q) => idSet.has(q.id));
+  } else if (mode === 'theme') {
+    pool = all.filter((q) => q.theme_id === themeId);
+  } else {
+    pool = all;
+  }
   return shuffle(pool).slice(0, count);
+}
+
+// Toutes les questions d'un thème pour un niveau donné (pas de tirage) —
+// sert à afficher la progression ("X/Y maîtrisées") sur l'écran thème.
+export async function fetchQuestionsForTheme(themeId: string, level: Level): Promise<Question[]> {
+  const all = await getQuestionsForLevel(level);
+  return all.filter((q) => q.theme_id === themeId);
+}
+
+// Sous-ensemble d'un pool de questions par id, filtré par niveau — sert au
+// mode "review" pour compter combien de questions ratées restent
+// disponibles au niveau actuel avant de lancer le quiz.
+export async function fetchQuestionsByIds(ids: string[], level: Level): Promise<Question[]> {
+  if (ids.length === 0) return [];
+  const all = await getQuestionsForLevel(level);
+  const idSet = new Set(ids);
+  return all.filter((q) => idSet.has(q.id));
 }
 
 // Recherche full-text simple côté client pour la Home.

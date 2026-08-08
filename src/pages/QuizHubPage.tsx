@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Play, Shuffle } from 'lucide-react';
-import { fetchThemesForLevel } from '../lib/api';
+import { ChevronLeft, Play, Repeat, Shuffle } from 'lucide-react';
+import { fetchQuestionsByIds, fetchThemesForLevel } from '../lib/api';
 import { resolveIcon } from '../lib/icons';
 import type { Theme } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
 import { useLevel } from '../lib/useLevel';
+import { getMissedQuestionIds } from '../lib/gamification';
+import { getQuestionAttempts } from '../lib/storage';
 
 const QUIZ_COUNT = 5;
 
@@ -14,6 +16,7 @@ export function QuizHubPage() {
   const [level] = useLevel();
   const [themes, setThemes] = useState<Theme[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [missedIds, setMissedIds] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -25,6 +28,26 @@ export function QuizHubPage() {
         if (!cancelled) setThemes(t);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Erreur de chargement');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [level]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const allMissed = getMissedQuestionIds(getQuestionAttempts());
+      if (allMissed.length === 0) {
+        if (!cancelled) setMissedIds([]);
+        return;
+      }
+      try {
+        const available = await fetchQuestionsByIds(allMissed, level);
+        if (!cancelled) setMissedIds(available.map((q) => q.id));
+      } catch {
+        if (!cancelled) setMissedIds([]);
       }
     })();
     return () => {
@@ -46,6 +69,21 @@ export function QuizHubPage() {
         5 questions tirées aléatoirement, différentes à chaque partie. Filtrées selon votre
         niveau (modifiable depuis l'accueil).
       </p>
+
+      {missedIds.length > 0 && (
+        <button
+          type="button"
+          onClick={() =>
+            navigate('/quiz/run', {
+              state: { mode: 'review', questionIds: missedIds, count: missedIds.length },
+            })
+          }
+          className="btn-secondary w-full mb-3 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
+        >
+          <Repeat className="h-5 w-5" aria-hidden />
+          Revoir mes erreurs ({missedIds.length})
+        </button>
+      )}
 
       {error && <ErrorBox message={error} />}
       {!themes && !error && <Loader />}

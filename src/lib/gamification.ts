@@ -1,5 +1,5 @@
 import type { Badge } from '../types/domain';
-import type { QuizHistoryEntry } from './storage';
+import type { QuestionAttempt, QuizHistoryEntry } from './storage';
 
 // Retourne les ids de badges qui doivent être débloqués vu l'historique complet.
 // Pure : ne touche pas au localStorage.
@@ -48,4 +48,37 @@ export function computeMaxStreak(
     }
   }
   return max;
+}
+
+// Ne garde que le dernier essai de chaque question (les tentatives sont déjà
+// stockées en ordre chronologique, donc la dernière écrase les précédentes).
+function latestAttemptByQuestion(attempts: QuestionAttempt[]): Map<string, QuestionAttempt> {
+  const map = new Map<string, QuestionAttempt>();
+  for (const a of attempts) map.set(a.questionId, a);
+  return map;
+}
+
+// Questions dont le dernier essai est raté. Une question qui a été ratée puis
+// réussie ensuite n'apparaît plus dans la liste.
+export function getMissedQuestionIds(attempts: QuestionAttempt[]): string[] {
+  const missed: string[] = [];
+  for (const [id, a] of latestAttemptByQuestion(attempts)) {
+    if (!a.correct) missed.push(id);
+  }
+  return missed;
+}
+
+// Progression sur un thème : nombre de questions dont le dernier essai est
+// correct, sur le total de questions disponibles à ce thème/niveau.
+export function computeThemeMastery(
+  attempts: QuestionAttempt[],
+  themeId: string,
+  totalQuestionsInTheme: number,
+): { masteredCount: number; total: number } {
+  const latest = latestAttemptByQuestion(attempts.filter((a) => a.themeId === themeId));
+  let masteredCount = 0;
+  for (const a of latest.values()) {
+    if (a.correct) masteredCount += 1;
+  }
+  return { masteredCount, total: totalQuestionsInTheme };
 }

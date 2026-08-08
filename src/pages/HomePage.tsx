@@ -7,6 +7,7 @@ import type { Theme } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
 import { LevelToggle } from '../components/LevelToggle';
 import { SearchBar } from '../components/SearchBar';
+import { StreakCard } from '../components/StreakCard';
 import { useLevel } from '../lib/useLevel';
 
 export function HomePage() {
@@ -37,6 +38,8 @@ export function HomePage() {
       <p className="text-slate-700 mb-6">
         Fiches mémo et quiz de secourisme — RTN 2026, AFGSU et Situations Sanitaires Exceptionnelles.
       </p>
+
+      <StreakCard />
 
       <LevelToggle value={level} onChange={setLevel} />
 
