@@ -3,16 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Play, Shuffle } from 'lucide-react';
 import { fetchThemesForLevel } from '../lib/api';
 import { resolveIcon } from '../lib/icons';
-import type { Theme, QuestionCount } from '../types/domain';
+import type { Theme } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
 import { useLevel } from '../lib/useLevel';
+
+const QUIZ_COUNT = 5;
 
 export function QuizHubPage() {
   const navigate = useNavigate();
   const [level] = useLevel();
   const [themes, setThemes] = useState<Theme[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [count, setCount] = useState<QuestionCount>(5);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,26 +43,9 @@ export function QuizHubPage() {
 
       <h1 className="text-2xl font-bold mb-2">Lancer un quiz</h1>
       <p className="text-slate-700 mb-6">
-        Les questions sont tirées aléatoirement, différentes à chaque partie. Filtrées selon
-        votre niveau (modifiable depuis l'accueil).
+        5 questions tirées aléatoirement, différentes à chaque partie. Filtrées selon votre
+        niveau (modifiable depuis l'accueil).
       </p>
-
-      <div className="mb-6">
-        <div className="text-sm font-semibold mb-2">Nombre de questions</div>
-        <div className="flex gap-2">
-          {([5, 10] as const).map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setCount(n)}
-              className={count === n ? 'btn-primary flex-1' : 'btn-secondary flex-1'}
-              aria-pressed={count === n}
-            >
-              {n} questions
-            </button>
-          ))}
-        </div>
-      </div>
 
       {error && <ErrorBox message={error} />}
       {!themes && !error && <Loader />}
@@ -70,7 +54,7 @@ export function QuizHubPage() {
         <>
           <button
             type="button"
-            onClick={() => navigate('/quiz/run', { state: { mode: 'mixed', count } })}
+            onClick={() => navigate('/quiz/run', { state: { mode: 'mixed', count: QUIZ_COUNT } })}
             className="btn-primary w-full mb-6"
           >
             <Shuffle className="h-5 w-5" aria-hidden />
@@ -96,7 +80,7 @@ export function QuizHubPage() {
                             mode: 'theme',
                             themeId: theme.id,
                             themeTitle: theme.title,
-                            count,
+                            count: QUIZ_COUNT,
                           },
                         })
                       }
