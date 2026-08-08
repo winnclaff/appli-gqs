@@ -25,8 +25,13 @@ export function Layout() {
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6">
         <Outlet />
       </main>
-      <footer className="max-w-3xl mx-auto px-4 py-6 text-xs text-slate-500 text-center">
-        Outil de révision. Ne remplace pas une formation officielle GQS / PSC / PSE / AFGSU.
+      <footer className="max-w-3xl mx-auto px-4 py-6 text-xs text-slate-500 text-center space-y-1">
+        <p>Outil de révision. Ne remplace pas une formation officielle GQS / PSC / PSE / AFGSU.</p>
+        <p>
+          Créé par <span className="font-medium">@un_homme_en_blanc</span>. Malgré toute
+          l'attention portée à ce projet, des erreurs peuvent subsister.
+        </p>
+        <p>v{__APP_VERSION__}</p>
       </footer>
     </div>
   );
