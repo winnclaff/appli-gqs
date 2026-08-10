@@ -9,7 +9,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 
-const SITE_URL = 'https://gentle-sherbet-52e2cd.netlify.app';
+const SITE_URL = 'https://quiz-secours.netlify.app';
 const LEVELS = ['grand_public', 'psc', 'pse', 'afgsu'];
 
 function loadEnv() {

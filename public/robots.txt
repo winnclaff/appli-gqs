@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://gentle-sherbet-52e2cd.netlify.app/sitemap.xml
+Sitemap: https://quiz-secours.netlify.app/sitemap.xml
