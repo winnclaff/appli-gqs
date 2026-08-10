@@ -94,6 +94,19 @@ export async function fetchMemoCards(themeId: string, level: Level): Promise<Mem
   return cards.filter((c) => c.theme_id === themeId);
 }
 
+// Insert-only : aucune policy SELECT publique sur error_reports, donc pas de
+// lecture possible depuis le client. Louis consulte via le Table Editor
+// Supabase (session admin, contourne RLS).
+export async function reportQuestionError(
+  questionId: string,
+  questionNumber: number | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('error_reports')
+    .insert({ question_id: questionId, question_number: questionNumber });
+  if (error) throw error;
+}
+
 export async function fetchBadges(): Promise<Badge[]> {
   return cached('badges:all', async () => {
     const { data, error } = await supabase

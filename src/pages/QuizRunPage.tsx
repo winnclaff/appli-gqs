@@ -16,6 +16,7 @@ import { computeMaxStreak, computeUnlockedBadgeIds } from '../lib/gamification';
 import { resolveIcon } from '../lib/icons';
 import { useLevel } from '../lib/useLevel';
 import { Confetti } from '../components/Confetti';
+import { ReportErrorButton } from '../components/ReportErrorButton';
 
 type LocationState = {
   mode: QuizMode;
@@ -156,8 +157,9 @@ export function QuizRunPage() {
         </p>
       )}
 
-      <div className="mb-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <QuestionNumberBadge n={q.question_number} />
+        <ReportErrorButton key={q.id} questionId={q.id} questionNumber={q.question_number} />
       </div>
       <h1 className="text-lg font-semibold mb-4">{q.question_text}</h1>
 
