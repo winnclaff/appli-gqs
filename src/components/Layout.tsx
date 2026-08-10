@@ -28,8 +28,16 @@ export function Layout() {
       <footer className="max-w-3xl mx-auto px-4 py-6 text-xs text-slate-500 text-center space-y-1">
         <p>Outil de révision. Ne remplace pas une formation officielle GQS / PSC / PSE / AFGSU.</p>
         <p>
-          Créé par <span className="font-medium">@un_homme_en_blanc</span>. Malgré toute
-          l'attention portée à ce projet, des erreurs peuvent subsister.
+          Créé par{' '}
+          <a
+            href="https://www.instagram.com/un_homme_en_blanc/"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="font-medium underline underline-offset-2 hover:text-brand-700"
+          >
+            @un_homme_en_blanc
+          </a>
+          . Malgré toute l'attention portée à ce projet, des erreurs peuvent subsister.
         </p>
         <p>v{__APP_VERSION__}</p>
       </footer>
