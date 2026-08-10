@@ -1,31 +1,41 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ListChecks } from 'lucide-react';
 import { fetchMemoCards, fetchQuestionsForTheme, fetchTheme } from '../lib/api';
 import { resolveIcon } from '../lib/icons';
-import type { MemoCard, Theme } from '../types/domain';
+import type { Level, MemoCard, Theme } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
 import { SourceTag } from '../components/SourceTag';
 import { useLevel } from '../lib/useLevel';
+import { isValidLevel } from '../lib/level';
 import { computeThemeMastery } from '../lib/gamification';
 import { getQuestionAttempts } from '../lib/storage';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 export function ThemePage() {
-  const { themeId } = useParams<{ themeId: string }>();
+  const { level: levelParam, themeId } = useParams<{ level: string; themeId: string }>();
   const navigate = useNavigate();
-  const [level] = useLevel();
+  const [, setGlobalLevel] = useLevel();
   const [theme, setTheme] = useState<Theme | null>(null);
   const [cards, setCards] = useState<MemoCard[] | null>(null);
   const [questionCount, setQuestionCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const valid = isValidLevel(levelParam);
+  const level: Level = valid ? levelParam : 'grand_public';
+
   useDocumentMeta(
     theme?.title ?? 'Fiche thème',
     theme?.short_description ?? `Fiches mémo et quiz de premiers secours${theme ? ` — ${theme.title}` : ''}.`,
   );
 
   useEffect(() => {
-    if (!themeId) return;
+    if (valid) setGlobalLevel(level);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [level, valid]);
+
+  useEffect(() => {
+    if (!themeId || !valid) return;
     let cancelled = false;
     setTheme(null);
     setCards(null);
@@ -50,24 +60,25 @@ export function ThemePage() {
     return () => {
       cancelled = true;
     };
-  }, [themeId, level]);
+  }, [themeId, level, valid]);
 
+  if (!valid || !themeId) return <Navigate to="/" replace />;
   if (error) return <ErrorBox message={error} />;
   if (!theme || !cards) return <Loader />;
 
   const Icon = resolveIcon(theme.icon);
   const mastery =
-    themeId && questionCount != null && questionCount > 0
+    questionCount != null && questionCount > 0
       ? computeThemeMastery(getQuestionAttempts(), themeId, questionCount)
       : null;
 
   return (
     <section>
       <Link
-        to="/"
+        to={`/reviser/${level}`}
         className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-brand-700 mb-3"
       >
-        <ChevronLeft className="h-4 w-4" aria-hidden /> Accueil
+        <ChevronLeft className="h-4 w-4" aria-hidden /> Retour aux thèmes
       </Link>
 
       <header className="flex items-start gap-3 mb-4">

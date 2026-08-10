@@ -48,7 +48,7 @@ export function WheelPage() {
       return;
     }
     setLevel(segment.level);
-    navigate('/reviser');
+    navigate(`/reviser/${segment.level}`);
   }
 
   return (

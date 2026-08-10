@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Play, Repeat, Shuffle } from 'lucide-react';
 import { fetchQuestionsByIds, fetchThemesForLevel } from '../lib/api';
 import { resolveIcon } from '../lib/icons';
-import type { Theme } from '../types/domain';
+import type { Level, Theme } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
 import { useLevel } from '../lib/useLevel';
+import { isValidLevel } from '../lib/level';
 import { getMissedQuestionIds } from '../lib/gamification';
 import { getQuestionAttempts } from '../lib/storage';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
@@ -13,17 +14,28 @@ import { useDocumentMeta } from '../lib/useDocumentMeta';
 const QUIZ_COUNT = 5;
 
 export function QuizHubPage() {
+  const { level: levelParam } = useParams<{ level: string }>();
   const navigate = useNavigate();
-  const [level] = useLevel();
-  useDocumentMeta(
-    'Lancer un quiz',
-    'Quiz de premiers secours par thème ou mélangé, 5 questions tirées aléatoirement à chaque partie.',
-  );
+  const [, setGlobalLevel] = useLevel();
   const [themes, setThemes] = useState<Theme[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [missedIds, setMissedIds] = useState<string[]>([]);
 
+  const valid = isValidLevel(levelParam);
+  const level: Level = valid ? levelParam : 'grand_public';
+
+  useDocumentMeta(
+    'Lancer un quiz',
+    'Quiz de premiers secours par thème ou mélangé, 5 questions tirées aléatoirement à chaque partie.',
+  );
+
   useEffect(() => {
+    if (valid) setGlobalLevel(level);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [level, valid]);
+
+  useEffect(() => {
+    if (!valid) return;
     let cancelled = false;
     setThemes(null);
     setError(null);
@@ -38,9 +50,10 @@ export function QuizHubPage() {
     return () => {
       cancelled = true;
     };
-  }, [level]);
+  }, [level, valid]);
 
   useEffect(() => {
+    if (!valid) return;
     let cancelled = false;
     (async () => {
       const allMissed = getMissedQuestionIds(getQuestionAttempts());
@@ -58,15 +71,17 @@ export function QuizHubPage() {
     return () => {
       cancelled = true;
     };
-  }, [level]);
+  }, [level, valid]);
+
+  if (!valid) return <Navigate to="/" replace />;
 
   return (
     <section>
       <Link
-        to="/"
+        to={`/reviser/${level}`}
         className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-brand-700 mb-3"
       >
-        <ChevronLeft className="h-4 w-4" aria-hidden /> Accueil
+        <ChevronLeft className="h-4 w-4" aria-hidden /> Retour aux thèmes
       </Link>
 
       <h1 className="text-2xl font-bold mb-2">Lancer un quiz</h1>

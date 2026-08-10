@@ -1,28 +1,41 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ListChecks, Award } from 'lucide-react';
 import { fetchThemesForLevel } from '../lib/api';
 import { resolveIcon } from '../lib/icons';
-import type { Theme } from '../types/domain';
+import type { Level, Theme } from '../types/domain';
 import { LEVELS } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
 import { LevelToggle } from '../components/LevelToggle';
 import { SearchBar } from '../components/SearchBar';
 import { StreakCard } from '../components/StreakCard';
 import { useLevel } from '../lib/useLevel';
+import { isValidLevel } from '../lib/level';
 import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 export function HomePage() {
-  const [level, setLevel] = useLevel();
+  const { level: levelParam } = useParams<{ level: string }>();
+  const navigate = useNavigate();
+  const [, setGlobalLevel] = useLevel();
   const [themes, setThemes] = useState<Theme[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const valid = isValidLevel(levelParam);
+  const level: Level = valid ? levelParam : 'grand_public';
   const levelInfo = LEVELS.find((l) => l.code === level);
+
   useDocumentMeta(
     levelInfo?.label ?? 'Réviser',
     levelInfo?.description ?? 'Fiches mémo et quiz de premiers secours.',
   );
 
   useEffect(() => {
+    if (valid) setGlobalLevel(level);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [level, valid]);
+
+  useEffect(() => {
+    if (!valid) return;
     let cancelled = false;
     setThemes(null);
     setError(null);
@@ -37,7 +50,9 @@ export function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [level]);
+  }, [level, valid]);
+
+  if (!valid) return <Navigate to="/" replace />;
 
   return (
     <section>
@@ -53,13 +68,13 @@ export function HomePage() {
 
       <StreakCard />
 
-      <LevelToggle value={level} onChange={setLevel} />
+      <LevelToggle value={level} onChange={(l) => navigate(`/reviser/${l}`)} />
 
       <SearchBar level={level} />
 
       <div className="grid gap-3 mb-8">
         <Link
-          to="/quiz"
+          to={`/quiz/${level}`}
           className="card p-4 flex items-center justify-between hover:border-brand-300 hover:shadow transition"
         >
           <div className="flex items-center gap-3">
@@ -107,7 +122,7 @@ export function HomePage() {
             return (
               <li key={theme.id}>
                 <Link
-                  to={`/themes/${theme.id}`}
+                  to={`/themes/${level}/${theme.id}`}
                   className="card p-4 flex items-start gap-3 hover:border-brand-300 hover:shadow transition"
                 >
                   <div className="p-2 rounded-lg bg-brand-100 text-brand-700 shrink-0">

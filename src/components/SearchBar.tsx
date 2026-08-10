@@ -82,7 +82,7 @@ export function SearchBar({ level }: Props) {
                 <li key={hit.kind === 'memo_card' ? `c-${hit.card.id}` : `q-${hit.question.id}`}>
                   {hit.kind === 'memo_card' ? (
                     <Link
-                      to={`/themes/${hit.theme.id}`}
+                      to={`/themes/${level}/${hit.theme.id}`}
                       className="card p-3 flex items-start gap-3 hover:border-brand-300 hover:shadow transition"
                     >
                       <BookOpen className="h-5 w-5 text-brand-600 shrink-0 mt-0.5" aria-hidden />
@@ -95,7 +95,7 @@ export function SearchBar({ level }: Props) {
                     </Link>
                   ) : (
                     <Link
-                      to={`/themes/${hit.theme.id}`}
+                      to={`/themes/${level}/${hit.theme.id}`}
                       className="card p-3 flex items-start gap-3 hover:border-brand-300 hover:shadow transition"
                     >
                       <HelpCircle className="h-5 w-5 text-slate-500 shrink-0 mt-0.5" aria-hidden />

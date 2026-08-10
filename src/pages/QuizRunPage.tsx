@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Award, Check, ChevronLeft, Flame, RotateCw, X } from 'lucide-react';
 import { fetchBadges, fetchQuizQuestions } from '../lib/api';
-import type { Badge, Question, QuizMode } from '../types/domain';
+import type { Badge, Level, Question, QuizMode } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
 import { SourceTag } from '../components/SourceTag';
 import {
@@ -78,7 +78,7 @@ export function QuizRunPage() {
     };
   }, [state, level]);
 
-  if (!state) return <Navigate to="/quiz" replace />;
+  if (!state) return <Navigate to={`/quiz/${level}`} replace />;
   if (error) return <ErrorBox message={error} />;
   if (!questions) return <Loader label="Préparation du quiz…" />;
 
@@ -86,7 +86,7 @@ export function QuizRunPage() {
     return (
       <section>
         <Link
-          to="/quiz"
+          to={`/quiz/${level}`}
           className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-brand-700 mb-3"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden /> Retour
@@ -104,6 +104,7 @@ export function QuizRunPage() {
         mode={state.mode}
         themeId={state.themeId ?? null}
         themeTitle={state.themeTitle}
+        level={level}
         onRestart={() => {
           navigate('/quiz/run', { replace: true, state: { ...state } });
         }}
@@ -135,7 +136,7 @@ export function QuizRunPage() {
   return (
     <section>
       <div className="flex items-center justify-between mb-4 text-sm text-slate-600">
-        <Link to="/quiz" className="inline-flex items-center gap-1 hover:text-brand-700">
+        <Link to={`/quiz/${level}`} className="inline-flex items-center gap-1 hover:text-brand-700">
           <ChevronLeft className="h-4 w-4" aria-hidden /> Quitter
         </Link>
         <span>
@@ -235,6 +236,7 @@ function QuizResult({
   mode,
   themeId,
   themeTitle,
+  level,
   onRestart,
 }: {
   questions: Question[];
@@ -242,6 +244,7 @@ function QuizResult({
   mode: QuizMode;
   themeId: string | null;
   themeTitle: string | undefined;
+  level: Level;
   onRestart: () => void;
 }) {
   const correctFlags = answers.map((a, i) => a === questions[i].correct_choice_index);
@@ -373,7 +376,7 @@ function QuizResult({
           <RotateCw className="h-5 w-5" aria-hidden />
           Rejouer
         </button>
-        <Link to="/quiz" className="btn-secondary flex-1">
+        <Link to={`/quiz/${level}`} className="btn-secondary flex-1">
           Autre quiz
         </Link>
       </div>
