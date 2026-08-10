@@ -1,4 +1,11 @@
-# CLAUDE.md — App révision Soins d'Urgence
+# CLAUDE.md — QuizSecours (app révision Soins d'Urgence)
+
+## Nom de l'app
+**QuizSecours**. Anciennement nommée d'après le référentiel GQS — renommée car "Gestes Qui Sauvent"
+est une marque déposée. Ne jamais utiliser "Gestes Qui Sauvent" / "Gestes qui sauvent" comme nom de
+l'application (titre, header, footer, meta). Les mentions factuelles des référentiels eux-mêmes
+(GQS, PSC, PSE, AFGSU comme noms de formations officielles) restent normales et nécessaires —
+c'est uniquement le nom de l'app qui a changé.
 
 ## Stack
 Vite + React + TypeScript + TailwindCSS v3 + React Router + Zod + Supabase + Netlify.
@@ -7,7 +14,8 @@ Même stack que Ovalia et la brasserie.
 ## Contexte projet
 Webapp gratuite, grand public + apprenants secourisme, sans compte utilisateur.
 Depuis la v2, l'app couvre plusieurs référentiels (RTN 2026 GQS/PSC/PSE, AFGSU, Décret SSE 2024, Doctrine damage control).
-L'utilisateur choisit son niveau (Grand public / PSC / PSE / AFGSU) et l'app filtre thèmes, fiches et quiz en conséquence.
+L'utilisateur choisit son référentiel via l'écran d'accueil en roue ("/"), qui l'envoie vers "/reviser"
+où l'app filtre thèmes, fiches et quiz en conséquence.
 
 Priorité éditoriale : le grand public doit pouvoir trouver rapidement des réponses claires et fiables.
 

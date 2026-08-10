@@ -7,6 +7,7 @@ import { computeUnlockedBadgeIds } from '../lib/gamification';
 import { resolveIcon, Award } from '../lib/icons';
 import type { Badge } from '../types/domain';
 import { Loader, ErrorBox } from '../components/Loader';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 const CRITERIA_LABELS: Record<Badge['criteria_type'], (v: number) => string> = {
   quiz_completed: (v) => (v === 1 ? 'Terminer 1 quiz' : `Terminer ${v} quiz`),
@@ -20,6 +21,10 @@ export function BadgesPage() {
   const [badges, setBadges] = useState<Badge[] | null>(null);
   const [unlocked, setUnlocked] = useState<string[]>(getUnlockedBadges());
   const [error, setError] = useState<string | null>(null);
+  useDocumentMeta(
+    'Mes badges',
+    'Suivez votre progression et débloquez des badges en révisant les gestes de premiers secours.',
+  );
 
   useEffect(() => {
     let cancelled = false;

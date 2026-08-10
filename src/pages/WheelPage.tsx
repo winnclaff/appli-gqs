@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Award, HeartPulse, Siren, Stethoscope, Users, type LucideIcon } from 'lucide-react';
 import { LEVELS, type Level } from '../types/domain';
 import { useLevel } from '../lib/useLevel';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 type Segment =
   | { kind: 'level'; level: Level; icon: LucideIcon; label: string }
@@ -36,6 +37,10 @@ const RADIUS_PERCENT = 38;
 export function WheelPage() {
   const navigate = useNavigate();
   const [, setLevel] = useLevel();
+  useDocumentMeta(
+    'Accueil',
+    'Choisissez un référentiel de premiers secours (GQS, PSC, PSE, AFGSU) pour réviser ses fiches et ses quiz gratuitement.',
+  );
 
   function handleSelect(segment: Segment) {
     if (segment.kind === 'badges') {

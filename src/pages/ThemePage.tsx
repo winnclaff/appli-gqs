@@ -9,6 +9,7 @@ import { SourceTag } from '../components/SourceTag';
 import { useLevel } from '../lib/useLevel';
 import { computeThemeMastery } from '../lib/gamification';
 import { getQuestionAttempts } from '../lib/storage';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 export function ThemePage() {
   const { themeId } = useParams<{ themeId: string }>();
@@ -18,6 +19,10 @@ export function ThemePage() {
   const [cards, setCards] = useState<MemoCard[] | null>(null);
   const [questionCount, setQuestionCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useDocumentMeta(
+    theme?.title ?? 'Fiche thème',
+    theme?.short_description ?? `Fiches mémo et quiz de premiers secours${theme ? ` — ${theme.title}` : ''}.`,
+  );
 
   useEffect(() => {
     if (!themeId) return;

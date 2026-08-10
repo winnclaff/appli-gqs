@@ -10,12 +10,17 @@ import { LevelToggle } from '../components/LevelToggle';
 import { SearchBar } from '../components/SearchBar';
 import { StreakCard } from '../components/StreakCard';
 import { useLevel } from '../lib/useLevel';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 export function HomePage() {
   const [level, setLevel] = useLevel();
   const [themes, setThemes] = useState<Theme[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const levelInfo = LEVELS.find((l) => l.code === level);
+  useDocumentMeta(
+    levelInfo?.label ?? 'Réviser',
+    levelInfo?.description ?? 'Fiches mémo et quiz de premiers secours.',
+  );
 
   useEffect(() => {
     let cancelled = false;

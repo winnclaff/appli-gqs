@@ -8,12 +8,17 @@ import { Loader, ErrorBox } from '../components/Loader';
 import { useLevel } from '../lib/useLevel';
 import { getMissedQuestionIds } from '../lib/gamification';
 import { getQuestionAttempts } from '../lib/storage';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 const QUIZ_COUNT = 5;
 
 export function QuizHubPage() {
   const navigate = useNavigate();
   const [level] = useLevel();
+  useDocumentMeta(
+    'Lancer un quiz',
+    'Quiz de premiers secours par thème ou mélangé, 5 questions tirées aléatoirement à chaque partie.',
+  );
   const [themes, setThemes] = useState<Theme[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [missedIds, setMissedIds] = useState<string[]>([]);

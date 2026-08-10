@@ -12,7 +12,7 @@ export function Layout() {
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
           <Link to="/" className="flex items-center gap-2 font-bold text-lg">
             <HeartPulse className="h-6 w-6" aria-hidden />
-            <span>Réviser les gestes</span>
+            <span>QuizSecours</span>
           </Link>
           <span
             className="text-xs bg-white/15 border border-white/30 rounded-full px-2.5 py-1 font-semibold"

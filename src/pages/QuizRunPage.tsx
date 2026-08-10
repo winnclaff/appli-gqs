@@ -17,6 +17,7 @@ import { resolveIcon } from '../lib/icons';
 import { useLevel } from '../lib/useLevel';
 import { Confetti } from '../components/Confetti';
 import { ReportErrorButton } from '../components/ReportErrorButton';
+import { useDocumentMeta } from '../lib/useDocumentMeta';
 
 type LocationState = {
   mode: QuizMode;
@@ -47,6 +48,7 @@ export function QuizRunPage() {
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [revealed, setRevealed] = useState(false);
   const [quizComplete, setQuizComplete] = useState(false);
+  useDocumentMeta('Quiz en cours', 'Quiz de révision premiers secours.');
 
   useEffect(() => {
     if (!state) return;
