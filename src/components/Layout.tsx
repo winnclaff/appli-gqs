@@ -1,11 +1,21 @@
-import { Link, Outlet } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { HeartPulse } from 'lucide-react';
 import { useLevel } from '../lib/useLevel';
 import { LEVELS } from '../types/domain';
+import { ConsentBanner } from './ConsentBanner';
+import { trackPageView } from '../lib/analytics';
 
 export function Layout() {
   const [level] = useLevel();
+  const location = useLocation();
   const label = LEVELS.find((l) => l.code === level)?.short ?? level;
+
+  useEffect(() => {
+    // No-op si GA n'a pas été chargé (pas de consentement / pas d'ID configuré).
+    trackPageView(location.pathname, document.title);
+  }, [location.pathname]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-brand-600 text-white sticky top-0 z-10 shadow-sm">
@@ -22,7 +32,7 @@ export function Layout() {
           </span>
         </div>
       </header>
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6">
+      <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 pb-24">
         <Outlet />
       </main>
       <footer className="max-w-3xl mx-auto px-4 py-6 text-xs text-slate-500 text-center space-y-1">
@@ -41,6 +51,7 @@ export function Layout() {
         </p>
         <p>v{__APP_VERSION__}</p>
       </footer>
+      <ConsentBanner />
     </div>
   );
 }
